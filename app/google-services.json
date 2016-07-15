@@ -1,0 +1,44 @@
+{
+  "project_info": {
+    "project_number": "863357276335",
+    "project_id": "nuance-1357"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:863357276335:android:1c7324638c5a22a6",
+        "android_client_info": {
+          "package_name": "com.ameng.sigin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "863357276335-a12ovccmmcpl8b2spgbuopmoo2klcf90.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ameng.sigin",
+            "certificate_hash": "0106684581E5A2D1B18F75EB6DE87CBF9B4AF888"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDETLAs3lu8I31nj65BWDMIzhBn7M7ToU8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 1
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

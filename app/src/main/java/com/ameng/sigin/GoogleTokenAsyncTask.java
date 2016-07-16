@@ -7,7 +7,10 @@ import android.util.Log;
 import com.google.android.gms.auth.GoogleAuthException;
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.UserRecoverableAuthException;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.http.HttpTransport;
 import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.ChannelListResponse;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -46,14 +49,16 @@ public class GoogleTokenAsyncTask extends AsyncTask<Void, Void, String> {
                     name,
                     SCOPE
             );
-//            final HttpTransport transport = AndroidHttp.newCompatibleTransport();
-//            com.google.api.client.json.JsonFactory jsonFactory =new JacksonFactory();
+            final HttpTransport transport = AndroidHttp.newCompatibleTransport();
+            com.google.api.client.json.JsonFactory jsonFactory =new com.google.api.client.extensions.android.json.AndroidJsonFactory();
 //            GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(context, YouTubeScopes.all());
 //            new com.google.api.services.youtube.YouTube.Builder(transport, jsonFactory, credential)
-//                    .setApplicationName("Google-YouTubeAndroidSample/1.0").build();
-//            youTube = new YouTube.Builder(transport, jsonFactory, credential)
-//                    .setApplicationName("com.ameng.sigin")
 //                    .build();
+
+
+            // 使用youtube api 建立連線
+            youTube = new YouTube.Builder(transport, jsonFactory, null)
+                    .build();
 
 
             Log.e("token", token.toString());
@@ -74,7 +79,15 @@ public class GoogleTokenAsyncTask extends AsyncTask<Void, Void, String> {
             Log.e("GoogleAuthException", authEx.toString());
         }
         doTranslate(token);
-
+        try {
+//            設定Request
+            YouTube.Channels.List list = youTube.channels().list("contentDetails").setMine(true).set("access_token",token);
+//           取得 response
+            ChannelListResponse response= list.execute();
+            Log.e("list", response.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return token;
     }
 
@@ -83,13 +96,12 @@ public class GoogleTokenAsyncTask extends AsyncTask<Void, Void, String> {
     protected void onPostExecute(String token) {
         Log.e("Access token retrieved:", token + "");
 
-
-//        googleTokenOnFinsh.onGoogleTokenOnFinsh(token);
     }
 
-    //    public void getGoogleTokenOnFinsh(GoogleTokenOnFinsh googleTokenOnFinsh){
-//        this.googleTokenOnFinsh=googleTokenOnFinsh;
-//    }
+    /**
+     * 以Http GET 方式建立連線
+     * @param token
+     */
     private void doTranslate(String token) {
         HttpURLConnection conn = null;
         try {

@@ -21,6 +21,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.plus.Plus;
 import com.google.android.gms.plus.model.people.Person;
+import com.google.api.client.googleapis.auth.oauth2.OAuth2Utils;
 import com.google.api.services.youtube.YouTubeScopes;
 
 public class MainActivity extends AppCompatActivity implements

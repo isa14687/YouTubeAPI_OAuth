@@ -1,22 +1,28 @@
 package com.ameng.sigin;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 
 import com.google.android.gms.auth.GoogleAuthException;
-import com.google.android.gms.auth.GoogleAuthUtil;
-import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.services.youtube.YouTube;
-import com.google.api.services.youtube.model.ChannelListResponse;
+import com.google.api.services.youtube.model.PlaylistListResponse;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 
 /**
  * Created by ameng on 2016/3/8.
@@ -40,25 +46,35 @@ public class GoogleTokenAsyncTask extends AsyncTask<Void, Void, String> {
     }
 
 
+    @SuppressLint("LongLogTag")
     @Override
     protected String doInBackground(Void... params) {
         String token = "";
         try {
-            token = GoogleAuthUtil.getToken(
-                    context,
-                    name,
-                    SCOPE
-            );
-            final HttpTransport transport = AndroidHttp.newCompatibleTransport();
-            com.google.api.client.json.JsonFactory jsonFactory =new com.google.api.client.extensions.android.json.AndroidJsonFactory();
-//            GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(context, YouTubeScopes.all());
-//            new com.google.api.services.youtube.YouTube.Builder(transport, jsonFactory, credential)
+//            token = GoogleAuthUtil.getToken(
+//                    context,
+//                    name,
+//                    YouTubeScopes.YOUTUBE
+//            );
+            ArrayList list = new ArrayList();
+//            list.add(SCOPE);
+//            Credential c = authorize(list, "ttt");
+//            Log.e("c", c.getAccessToken());
+
+            try {
+                getTokenWithGoogleAccountCredential();
+            } catch (GoogleAuthException e) {
+                e.printStackTrace();
+            }
+            HttpTransport transport = AndroidHttp.newCompatibleTransport();
+            com.google.api.client.json.JsonFactory jsonFactory = new com.google.api.client.extensions.android.json.AndroidJsonFactory();
+            // 使用youtube api 建立連線
+//            youTube = new YouTube.Builder(transport, jsonFactory, null)
 //                    .build();
 
-
-            // 使用youtube api 建立連線
-            youTube = new YouTube.Builder(transport, jsonFactory, null)
-                    .build();
+//            GoogleCredential credential = new GoogleCredential().setAccessToken(token);
+//            youTube = new YouTube.Builder(transport, jsonFactory, null)
+//                    .build();
 
 
             Log.e("token", token.toString());
@@ -66,41 +82,49 @@ public class GoogleTokenAsyncTask extends AsyncTask<Void, Void, String> {
         } catch (IOException transientEx) {
             // Network or server error, try later
             Log.e("IOException", transientEx.toString());
-        } catch (UserRecoverableAuthException e) {
-            // Recover (with e.getIntent())
-//            Intent recover = e.getIntent();
-            Log.e("UserRecoverableAuthException", e.toString());
-//            Intent recover = e.getIntent();
-//            context.startActivityForResult(recover, REQUEST_CODE_TOKEN_AUTH);
-        } catch (GoogleAuthException authEx) {
-            // The call is not ever expected to succeed
-            // assuming you have already verified that
-            // Google Play services is installed.
-            Log.e("GoogleAuthException", authEx.toString());
         }
-        doTranslate(token);
+//        doTranslate(token);
         try {
 //            設定Request
-            YouTube.Channels.List list = youTube.channels().list("contentDetails").setMine(true).set("access_token",token);
+            YouTube.Playlists.List list = youTube.playlists()
+                    .list("contentDetails")
+                    .setMine(true);
+//            若前面傳入的是 GoogleAccountCredential 不用 set ("access_token", token)
+//                    .set("access_token", token);
+
 //           取得 response
-            ChannelListResponse response= list.execute();
-            Log.e("list", response.toString());
+            PlaylistListResponse response = list.execute();
+            return response.toString();
         } catch (IOException e) {
             e.printStackTrace();
+            Log.e("e", e.toString());
+            return "";
         }
-        return token;
     }
 
 
     @Override
-    protected void onPostExecute(String token) {
-        Log.e("Access token retrieved:", token + "");
-
+    protected void onPostExecute(String response) {
+        JSONObject responseObj = null;
+        try {
+            responseObj = new JSONObject(response.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+            Log.e("e", e.toString());
+        }
+        Log.e("jsonObj", responseObj.toString());
+        try {
+            Log.e("getToken", ((JSONObject) ((JSONArray) responseObj.get("items")).get(0)).get("id").toString());
+            Intent intent = new Intent(context, YouTubeActivity.class);
+            intent.putExtra("id", ((JSONObject) ((JSONArray) responseObj.get("items")).get(0)).get("id").toString());
+            context.startActivity(intent);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * 以Http GET 方式建立連線
-     * @param token
      */
     private void doTranslate(String token) {
         HttpURLConnection conn = null;
@@ -133,5 +157,26 @@ public class GoogleTokenAsyncTask extends AsyncTask<Void, Void, String> {
                 conn.disconnect();
             }
         }
+    }
+
+    /**
+     *取得憑證
+     * @throws IOException
+     * @throws GoogleAuthException
+     */
+    public void getTokenWithGoogleAccountCredential() throws IOException, GoogleAuthException {
+        HttpTransport transport = AndroidHttp.newCompatibleTransport();
+        com.google.api.client.json.JsonFactory jsonFactory = new com.google.api.client.extensions.android.json.AndroidJsonFactory();
+        //add scope
+        ArrayList<String> arrayList = new ArrayList<>();
+        arrayList.add("https://www.googleapis.com/auth/userinfo.profile");
+        // 使用 GoogleAccountCredential傳入 context 及 SCOPE
+        GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(context, arrayList);
+        //要設定 AccountName 否則會拿不到 token
+        credential.setSelectedAccountName(name);
+        Log.e("credential", credential.getToken());
+        //傳入 YouTube.Builder
+        youTube = new com.google.api.services.youtube.YouTube.Builder(transport, jsonFactory, credential)
+                .build();
     }
 }
